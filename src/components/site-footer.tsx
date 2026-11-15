@@ -14,7 +14,7 @@ export function SiteFooter() {
             className="size-10 rounded-xl"
           />
           <span className="text-sm text-muted">
-            استشارات مالية شخصية — الرياض
+            استشارات مالية شخصية
           </span>
         </div>
 
