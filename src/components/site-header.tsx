@@ -5,6 +5,7 @@ import { XButton } from "./x-link";
 
 const links = [
   { href: "/#services", label: "الاستشارات" },
+  { href: "/#reviews", label: "آراء العملاء" },
   { href: "/#how", label: "كيف تعمل" },
   { href: "/#faq", label: "الأسئلة الشائعة" },
 ];

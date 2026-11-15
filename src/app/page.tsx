@@ -2,7 +2,14 @@ import { ButtonLink } from "@/components/button-link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { XButton, XIcon, X_HANDLE } from "@/components/x-link";
-import { benefits, faqs, services, steps, vatNote } from "@/lib/content";
+import {
+  benefits,
+  faqs,
+  reviews,
+  services,
+  steps,
+  vatNote,
+} from "@/lib/content";
 
 function Check({ className = "" }: { className?: string }) {
   return (
@@ -146,14 +153,49 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Client reviews */}
+        <section id="reviews" className="scroll-mt-20 py-20 sm:py-28">
+          <div className="mx-auto max-w-6xl px-5">
+            <SectionTitle
+              title="ماذا قال عملاؤنا؟"
+              sub="رسائل حقيقية وصلتنا على واتساب من عملاء بعد جلساتهم."
+            />
+            <div className="mt-12 gap-6 md:columns-2 lg:columns-3">
+              {reviews.map((text) => (
+                <figure
+                  key={text}
+                  className="mb-6 break-inside-avoid rounded-3xl bg-mist p-8"
+                >
+                  <svg
+                    viewBox="0 0 32 24"
+                    aria-hidden="true"
+                    className="h-6 w-8 fill-brand"
+                  >
+                    <path d="M0 24V13.6C0 5.9 4.3 1.3 12.8 0l1.2 3.2C9.6 4.3 7.5 6.6 7.3 10H13v14H0Zm18 0V13.6C18 5.9 22.300 1.3 30.800 0L32 3.200c-4.400 1.100-6.500 3.400-6.700 6.800H31v14H18Z" />
+                  </svg>
+                  <blockquote className="mt-5 whitespace-pre-line text-lg leading-9">
+                    {text}
+                  </blockquote>
+                  <figcaption className="mt-6 text-sm text-muted">
+                    عميل · عبر واتساب
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <ButtonLink href="/booking">احجز جلستك الآن</ButtonLink>
+            </div>
+          </div>
+        </section>
+
         {/* How it works */}
-        <section id="how" className="scroll-mt-20 py-20 sm:py-28">
+        <section id="how" className="scroll-mt-20 bg-mist py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-5">
             <SectionTitle title="ثلاث خطوات فقط" />
             <ol className="mt-12 grid gap-10 md:grid-cols-3">
               {steps.map((step, i) => (
                 <li key={step.title} className="text-center">
-                  <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-mist text-xl font-bold">
+                  <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-white text-xl font-bold">
                     {i + 1}
                   </span>
                   <h3 className="mt-5 text-xl font-bold">{step.title}</h3>
@@ -167,7 +209,7 @@ export default function HomePage() {
         </section>
 
         {/* What you get */}
-        <section className="bg-mist py-20 sm:py-28">
+        <section className="py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-5">
             <SectionTitle title="ماذا تحصل عليه؟" />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -189,7 +231,7 @@ export default function HomePage() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="scroll-mt-20 py-20 sm:py-28">
+        <section id="faq" className="scroll-mt-20 border-t border-line py-20 sm:py-28">
           <div className="mx-auto max-w-3xl px-5">
             <SectionTitle title="الأسئلة الشائعة" />
             <div className="mt-10 divide-y divide-line border-y border-line">

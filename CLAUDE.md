@@ -68,9 +68,15 @@ npm run typecheck  # TypeScript only
 - **Follow-up:** a one-month follow-up window is recorded on each booking.
 - **Admin:** one dashboard, email + password login.
 
+- **Reviews:** the home page shows real client WhatsApp messages as static text
+  in `src/lib/content.ts`, verbatim and without client names. There is no review
+  submission or moderation workflow.
+- **X account:** https://x.com/amwalschool is a main channel; it has a header
+  button, a home-page section and a footer button (black, not yellow).
+
 ## Not in the first release
 
-Reviews or testimonials, consultations counter, multiple consultants, in-person
+Review submission workflow, consultations counter, multiple consultants, in-person
 sessions, packages, subscriptions, Tabby/Tamara, store (courses, booklet, Excel
 sheet), AI intake assistant.
 
