@@ -1,6 +1,7 @@
 import { ButtonLink } from "@/components/button-link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { XButton, XIcon, X_HANDLE } from "@/components/x-link";
 import { benefits, faqs, services, steps, vatNote } from "@/lib/content";
 
 function Check({ className = "" }: { className?: string }) {
@@ -214,6 +215,29 @@ export default function HomePage() {
                 </details>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* X account */}
+        <section className="px-5 pb-6">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 rounded-3xl bg-mist px-6 py-14 text-center md:flex-row md:justify-between md:px-14 md:text-start">
+            <div className="flex flex-col items-center gap-6 md:flex-row">
+              <span className="flex size-20 shrink-0 items-center justify-center rounded-full bg-ink text-white">
+                <XIcon className="size-9" />
+              </span>
+              <div>
+                <h2 className="text-3xl font-bold leading-snug sm:text-4xl">
+                  تابع أموال على X
+                </h2>
+                <p className="mt-2 text-lg leading-8 text-muted">
+                  أفكار ونصائح في إدارة المال وزيادة الدخل على حسابنا{" "}
+                  <span dir="ltr" className="font-semibold text-ink">
+                    {X_HANDLE}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <XButton className="w-full shrink-0 sm:w-auto" />
           </div>
         </section>
 

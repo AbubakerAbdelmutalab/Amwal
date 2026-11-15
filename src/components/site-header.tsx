@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink } from "./button-link";
+import { XButton } from "./x-link";
 
 const links = [
   { href: "/#services", label: "الاستشارات" },
@@ -36,9 +37,12 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <ButtonLink href="/booking" size="sm">
-          احجز جلستك
-        </ButtonLink>
+        <div className="flex items-center gap-2">
+          <XButton size="sm" compactOnMobile />
+          <ButtonLink href="/booking" size="sm">
+            احجز جلستك
+          </ButtonLink>
+        </div>
       </div>
     </header>
   );
