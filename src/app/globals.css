@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Amwal.School design tokens */
+@theme inline {
+  --color-brand: #ffc000;
+  --color-brand-dark: #e6ad00;
+  --color-ink: #111111;
+  --color-mist: #f7f7f7;
+  --color-muted: #5c5c5c;
+  --color-line: #e8e8e8;
+  --font-sans: var(--font-plex), system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: #111111;
+}
+
+:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Hide the default disclosure triangle on FAQ items */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
