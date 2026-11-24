@@ -93,6 +93,23 @@ export const settings = pgTable("settings", {
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
+export const adminSessions = pgTable("admin_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  lastSeenAt: ts("last_seen_at").notNull().defaultNow(),
+  expiresAt: ts("expires_at").notNull(),
+  ipHash: text("ip_hash"),
+  userAgent: text("user_agent"),
+});
+
+export const loginAttempts = pgTable("login_attempts", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  at: ts("at").notNull().defaultNow(),
+  ipHash: text("ip_hash").notNull(),
+  success: boolean("success").notNull(),
+});
+
 // Never put personal data in `details`.
 export const auditLog = pgTable("audit_log", {
   id: bigserial("id", { mode: "number" }).primaryKey(),

@@ -29,21 +29,20 @@ const securityHeaders = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
+// Private pages (client booking links, admin): never indexed, never cached.
+const privatePages = ["/b/:path*", "/admin", "/admin/:path*"].map((source) => ({
+  source,
+  headers: [
+    { key: "X-Robots-Tag", value: "noindex, nofollow" },
+    { key: "Cache-Control", value: "private, no-store" },
+  ],
+}));
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["@electric-sql/pglite"],
   async headers() {
-    return [
-      { source: "/:path*", headers: securityHeaders },
-      {
-        // Private booking pages: never indexed, never cached by shared caches.
-        source: "/b/:path*",
-        headers: [
-          { key: "X-Robots-Tag", value: "noindex, nofollow" },
-          { key: "Cache-Control", value: "private, no-store" },
-        ],
-      },
-    ];
+    return [{ source: "/:path*", headers: securityHeaders }, ...privatePages];
   },
 };
 

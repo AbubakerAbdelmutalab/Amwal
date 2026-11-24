@@ -117,4 +117,42 @@ BEGIN
 END $$;
 `,
   },
+  {
+    id: "0002_admin",
+    sql: `
+-- Admin sessions: the cookie holds a random token; only its hash is stored.
+CREATE TABLE admin_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_hash text NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  ip_hash text,
+  user_agent text
+);
+
+-- Every admin sign-in attempt, for lockout after repeated failures.
+CREATE TABLE login_attempts (
+  id bigserial PRIMARY KEY,
+  at timestamptz NOT NULL DEFAULT now(),
+  ip_hash text NOT NULL,
+  success boolean NOT NULL
+);
+CREATE INDEX login_attempts_ip_at_idx ON login_attempts (ip_hash, at);
+
+ALTER TABLE admin_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE login_attempts ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE r text;
+BEGIN
+  FOREACH r IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+      EXECUTE format('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM %I', r);
+      EXECUTE format('REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM %I', r);
+    END IF;
+  END LOOP;
+END $$;
+`,
+  },
 ];

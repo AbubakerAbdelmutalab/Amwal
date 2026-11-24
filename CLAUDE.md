@@ -13,7 +13,13 @@ npm run typecheck  # TypeScript only
 npm test           # unit + database tests (embedded Postgres, no setup needed)
 npm run keys:generate  # print new encryption keys
 npm run db:migrate     # apply migrations to DATABASE_URL (hosted database)
+npm run admin:setup    # create admin email/password-hash/2FA-secret env lines
+npm run test:e2e       # browser test in headless Edge; needs `npm run dev` running
 ```
+
+Scripts with top-level `await` must be `.mts` (the package is CommonJS).
+`.env.local` holds local-only dev keys and a dev admin (`admin@amwal.local`,
+password in `E2E_ADMIN_PASSWORD`, used by the e2e test).
 
 Development needs no database server: without `DATABASE_URL`, an embedded
 Postgres (PGlite) is created in `./.data` (git-ignored) with migrations and seed
@@ -42,6 +48,11 @@ data applied automatically. Only one process can open it at a time, so stop
   `db/migrations.ts` (keep in sync); `settings.ts` defaults.
 - `src/app/booking/` — booking flow; `src/app/b/[token]/` — client's private
   booking page, reschedule, cancellation request.
+- `src/app/admin/login/` — admin sign-in; `src/app/admin/(panel)/` — bookings
+  list, booking detail (`bookings/[id]`), schedule. `src/server/auth.ts` holds
+  the sign-in/session logic (testable, no Next imports); `src/server/session.ts`
+  the Next glue (`requireAdmin`, cookies); `src/server/admin.ts` the admin data
+  access layer (every function takes an `AdminSession`).
 - `tests/` — node:test via tsx (`--conditions=react-server` for `server-only`).
 - `public/logo.png` — official logo (low resolution; replace with SVG when supplied).
 
@@ -71,6 +82,18 @@ data applied automatically. Only one process can open it at a time, so stop
 - Booking is switched off unless both a database and the keys are configured
   (`isBookingEnabled()`); production without them shows "قريبًا".
 - Never log personal data; `audit_log.details` must not contain it.
+- **Admin sign-in** needs email + password + 6-digit authenticator code (TOTP).
+  Credentials are env vars only (`ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` scrypt,
+  `ADMIN_TOTP_SECRET`). Each code works once. 5 failures from one connection
+  lock it for 15 minutes. The password check always runs, so timing doesn't
+  reveal a wrong email.
+- **Admin sessions**: random token in an HttpOnly, SameSite=Strict, Secure
+  (`__Host-` in production) cookie; only its hash is stored. Signed out after
+  2 idle hours or 12 hours total; sign-out deletes the session server-side.
+- Every admin page **and every admin action** calls `requireAdmin()`; the admin
+  data layer refuses to run without an `AdminSession`. Sign-ins, failures,
+  views of a booking and every change are in `audit_log`.
+- `/admin` is `noindex` and `no-store`.
 
 ## Conventions
 
@@ -138,8 +161,10 @@ sheet), AI intake assistant.
 2. Booking: secure data layer, schedule, slot rules, holds, "my booking" page,
    reschedule, cancellation request — **done** (not live: no hosted database yet)
 3. Payments: Moyasar test mode, webhooks, confirmation, receipts, refunds
-4. Operations: admin dashboard (with two-factor login), Google Meet,
-   notifications, intake message
+4. Operations: admin panel with two-factor sign-in (bookings, cancellation
+   approval, complete/no-show, schedule and exceptions) — **done**;
+   still to do: Google Meet, notifications, intake message, refunds through
+   Moyasar (until then the admin refunds manually in Moyasar's dashboard)
 5. Launch: Supabase + keys in Vercel, privacy policy and terms text, security
    review, phone testing, SEO, go-live
 
