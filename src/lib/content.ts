@@ -47,7 +47,7 @@ export const services: Service[] = [
   },
   {
     id: "both",
-    name: "الاستشارتان معًا",
+    name: "الاستشارة الكاملة",
     duration: "3 ساعات",
     price: 1100,
     summary: "إدارة الدخل وزيادة الدخل في جلسة واحدة متكاملة.",

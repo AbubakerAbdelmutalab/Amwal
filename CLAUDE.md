@@ -44,7 +44,7 @@ npm run typecheck  # TypeScript only
 - **Services** (prices include 15% VAT; nothing is added at checkout):
   - إدارة الدخل — 2 hours — 650 SAR
   - زيادة الدخل — 2 hours — 650 SAR
-  - الاستشارتان معًا — 3 hours — 1,100 SAR
+  - الاستشارة الكاملة — 3 hours — 1,100 SAR
 - **Weekly schedule** (configurable in admin; Friday closed):
   - Sat/Mon/Wed: 1:00 pm, 3:45 pm, 8:30 pm
   - Sun/Tue/Thu: 1:00 pm, 8:30 pm
