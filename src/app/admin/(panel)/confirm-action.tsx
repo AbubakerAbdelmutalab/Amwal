@@ -11,7 +11,7 @@ export function ConfirmAction({
 }: {
   label: string;
   confirmText: string;
-  action: () => Promise<{ ok: boolean }>;
+  action: () => Promise<{ ok: boolean; error?: string }>;
   danger?: boolean;
 }) {
   const router = useRouter();
@@ -47,6 +47,8 @@ export function ConfirmAction({
               if (res.ok) {
                 setOpen(false);
                 router.refresh();
+              } else if (res.error === "refund_failed") {
+                setError("تعذّر استرداد المبلغ عبر Stripe، ولم يتغير شيء في الحجز. حاول مرة أخرى بعد قليل.");
               } else {
                 setError("تعذّر تنفيذ الإجراء. حدّث الصفحة وحاول مرة أخرى.");
               }

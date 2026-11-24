@@ -4,7 +4,8 @@ const isDev = process.env.NODE_ENV !== "production";
 
 // Content Security Policy: the browser may only load code, styles, fonts and
 // images from this site, and the site cannot be embedded in another page.
-// Payment-provider domains are added here when payments are connected.
+// Card details are typed on Stripe's own page (checkout.stripe.com), which the
+// site only links to; no Stripe script runs on this site.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -14,7 +15,7 @@ const csp = [
   `connect-src 'self'${isDev ? " ws:" : ""}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  "form-action 'self' https://checkout.stripe.com",
   "object-src 'none'",
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");

@@ -14,12 +14,12 @@ export const metadata: Metadata = { title: "تفاصيل الحجز" };
 const ACTIONS: Record<AdminAction, { label: string; confirm: string; danger?: boolean }> = {
   approve_cancel: {
     label: "الموافقة على الإلغاء",
-    confirm: "سيُلغى الحجز ويصبح الموعد متاحًا لغيره. أعد المبلغ للعميل من لوحة Moyasar.",
+    confirm: "سيُلغى الحجز، ويُعاد المبلغ تلقائيًا إلى بطاقة العميل عبر Stripe، ويصبح الموعد متاحًا لغيره.",
     danger: true,
   },
   cancel: {
     label: "إلغاء الحجز",
-    confirm: "سيُلغى الحجز ويصبح الموعد متاحًا لغيره. إذا كان مدفوعًا، أعد المبلغ من لوحة Moyasar.",
+    confirm: "سيُلغى الحجز، وإذا كان مدفوعًا يُعاد المبلغ تلقائيًا عبر Stripe، ويصبح الموعد متاحًا لغيره.",
     danger: true,
   },
   complete: { label: "تمت الجلسة", confirm: "تسجيل الجلسة كمكتملة؟" },
@@ -34,6 +34,22 @@ const HISTORY: Record<string, string> = {
   "admin.cancel": "ألغى المشرف الحجز",
   "admin.complete": "سُجّلت الجلسة كمكتملة",
   "admin.no_show": "سُجّل عدم حضور العميل",
+  "booking.confirmed": "تأكد الحجز بعد الدفع",
+  "payment.auto_refunded": "أُعيد المبلغ تلقائيًا",
+};
+
+const PAYMENT_STATUS: Record<string, string> = {
+  pending: "صفحة الدفع مفتوحة",
+  paid: "مدفوع",
+  refunded: "مسترد",
+};
+
+const REFUND_REASON: Record<string, string> = {
+  admin_cancel: "إلغاء من المشرف",
+  slot_taken: "الموعد لم يعد متاحًا عند الدفع",
+  duplicate_payment: "دفع مكرر",
+  amount_mismatch: "مبلغ غير مطابق",
+  booking_closed: "الحجز ملغي",
 };
 
 function when(iso: string) {
@@ -98,6 +114,31 @@ export default async function AdminBookingPage({ params }: { params: Promise<{ i
             ) : (
               <p className="text-sm text-muted">لا توجد إجراءات متاحة لهذا الحجز.</p>
             )}
+          </section>
+
+          <section className="rounded-2xl bg-white p-6">
+            <h2 className="mb-4 font-bold">الدفع</h2>
+            {b.payments.length ? (
+              <ul className="space-y-3 text-sm">
+                {b.payments.map((p, i) => (
+                  <li key={i}>
+                    <p className="font-semibold">
+                      {PAYMENT_STATUS[p.status] ?? p.status} · {sar(p.amountHalalas)}
+                    </p>
+                    {p.paidAt ? <p className="text-muted">دُفع: {when(p.paidAt)}</p> : null}
+                    {p.refundedAt ? (
+                      <p className="text-muted">
+                        استُرد: {when(p.refundedAt)}
+                        {p.refundReason ? ` (${REFUND_REASON[p.refundReason] ?? p.refundReason})` : ""}
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted">لا توجد عمليات دفع.</p>
+            )}
+            <p className="mt-4 text-xs text-muted">بيانات البطاقات محفوظة لدى Stripe فقط، ولا تصل إلى هذا الموقع.</p>
           </section>
 
           <section className="rounded-2xl bg-white p-6">

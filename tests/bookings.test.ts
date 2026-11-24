@@ -115,7 +115,11 @@ test("a three-hour hold at 1:00 removes the 3:45 slot", async () => {
 
 test("an expired hold frees the slot", async () => {
   assert.ok((await hold(slot("2026-11-25", "13:00"))).ok);
-  const later = await hold(slot("2026-11-25", "13:00"), "0559876543", { at: minutes(11) });
+  assert.deepEqual(await hold(slot("2026-11-25", "13:00"), "0559876543", { at: minutes(29) }), {
+    ok: false,
+    error: "slot_unavailable",
+  });
+  const later = await hold(slot("2026-11-25", "13:00"), "0559876543", { at: minutes(31) });
   assert.ok(later.ok);
 });
 

@@ -13,6 +13,8 @@ import {
   newAccessToken,
 } from "./crypto";
 import { databaseMode, getDb, type DB } from "./db/client";
+import { pgCode } from "./db/errors";
+import { isPaymentsConfigured } from "./stripe";
 import {
   auditLog,
   bookings,
@@ -51,9 +53,17 @@ class Fail extends Error {
   }
 }
 
-/** Booking needs both a database and the encryption keys. */
+/**
+ * Booking needs a database and the encryption keys. On the live site it also
+ * needs payments configured and BOOKING_OPEN=true, so clients can never book
+ * before the owner deliberately opens booking.
+ */
 export function isBookingEnabled(): boolean {
-  return databaseMode() !== null && hasDataKeys();
+  if (databaseMode() === null || !hasDataKeys()) return false;
+  if (process.env.NODE_ENV === "production") {
+    return process.env.BOOKING_OPEN === "true" && isPaymentsConfigured();
+  }
+  return true;
 }
 
 export type ServiceOption = {
@@ -160,17 +170,6 @@ function fieldErrors(error: z.ZodError): Partial<Record<string, string>> {
     out[key] ??= issue.message;
   }
   return out;
-}
-
-/** Postgres error code, looking through Drizzle's error wrapping. */
-function pgCode(e: unknown): string | undefined {
-  let cur: unknown = e;
-  for (let i = 0; i < 5 && cur && typeof cur === "object"; i++) {
-    const code = (cur as { code?: unknown }).code;
-    if (typeof code === "string") return code;
-    cur = (cur as { cause?: unknown }).cause;
-  }
-  return undefined;
 }
 
 async function run<T>(fn: () => Promise<T>): Promise<T | Failure> {
@@ -297,10 +296,11 @@ export type BookingView = {
   emailMasked: string;
   canReschedule: boolean;
   canRequestCancel: boolean;
+  canPay: boolean;
   rescheduleCutoffHours: number;
 };
 
-async function findByToken(exec: Exec, token: string, lock = false) {
+export async function findByToken(exec: Exec, token: string, lock = false) {
   if (!isWellFormedToken(token)) return null;
   const query = exec
     .select()
@@ -341,6 +341,7 @@ export async function getBookingForToken(
     emailMasked: maskEmail(decrypt(client.emailEnc, "client.email")),
     canReschedule: status === "confirmed" && now.getTime() < cutoff,
     canRequestCancel: status === "confirmed" && now < b.startsAt,
+    canPay: status === "held" && isPaymentsConfigured(),
     rescheduleCutoffHours: settings.rescheduleCutoffHours,
   };
 }

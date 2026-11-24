@@ -27,7 +27,7 @@ export function CancelRequest({ token }: { token: string }) {
     <div className="rounded-2xl border border-line p-5">
       <p className="font-semibold">هل تريد إلغاء الحجز؟</p>
       <p className="mt-2 leading-7 text-muted">
-        سنراجع طلبك، وبعد الموافقة يُعاد المبلغ إلى وسيلة الدفع نفسها.
+        سنراجع طلبك، وبعد الموافقة يُعاد المبلغ تلقائيًا إلى بطاقتك.
       </p>
       {error ? <p role="alert" className="mt-3 text-red-700">{error}</p> : null}
       <div className="mt-4 flex gap-3">

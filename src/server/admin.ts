@@ -5,6 +5,7 @@ import { addDays, riyadhDate, riyadhToUtc } from "@/lib/schedule";
 import type { AdminSession } from "./auth";
 import { decrypt } from "./crypto";
 import { getDb } from "./db/client";
+import { paymentsForBooking, refundBookingPayments, type PaymentSummary } from "./payments";
 import {
   auditLog,
   bookings,
@@ -121,6 +122,7 @@ export type AdminBookingDetail = AdminBookingRow & {
   meetLink: string | null;
   history: { at: string; actor: string; action: string }[];
   allowed: AdminAction[];
+  payments: PaymentSummary[];
 };
 
 export type AdminAction = "approve_cancel" | "cancel" | "complete" | "no_show";
@@ -175,6 +177,7 @@ export async function getBookingDetail(
     meetLink: b.meetLink,
     history: history.map((h) => ({ ...h, at: h.at.toISOString() })),
     allowed: status === "expired" ? [] : allowedActions(b, now),
+    payments: await paymentsForBooking(b.id),
   };
 }
 
@@ -190,20 +193,31 @@ export async function applyBookingAction(
   id: unknown,
   action: unknown,
   now = new Date(),
-): Promise<{ ok: true } | { ok: false; error: "not_found" | "not_allowed" }> {
+): Promise<{ ok: true; refunded: number } | { ok: false; error: "not_found" | "not_allowed" | "refund_failed" }> {
   assertAdmin(session);
   const parsedId = uuid.safeParse(id);
   const parsedAction = z.enum(["approve_cancel", "cancel", "complete", "no_show"]).safeParse(action);
   if (!parsedId.success || !parsedAction.success) return { ok: false, error: "not_allowed" };
   const db = await getDb();
 
-  return db.transaction(async (tx) => {
+  try {
+    return await db.transaction(async (tx) => {
     const [b] = await tx.select().from(bookings).where(eq(bookings.id, parsedId.data)).for("update");
     if (!b) return { ok: false as const, error: "not_found" as const };
     if (!allowedActions(b, now).includes(parsedAction.data)) {
       return { ok: false as const, error: "not_allowed" as const };
     }
     const next = NEXT_STATUS[parsedAction.data];
+    // Cancelling refunds the client through Stripe first. If Stripe refuses,
+    // the error rolls back the whole change.
+    let refunded = 0;
+    if (next === "cancelled") {
+      try {
+        refunded = await refundBookingPayments(tx, b.id, now);
+      } catch (e) {
+        throw new RefundFailed(e);
+      }
+    }
     await tx
       .update(bookings)
       .set({
@@ -216,10 +230,23 @@ export async function applyBookingAction(
       actor: "admin",
       action: `admin.${parsedAction.data}`,
       bookingId: b.id,
-      details: { from: b.status, to: next },
+      details: { from: b.status, to: next, refunded },
     });
-    return { ok: true as const };
-  });
+    return { ok: true as const, refunded };
+    });
+  } catch (e) {
+    if (e instanceof RefundFailed) {
+      console.error("refund failed", e.cause instanceof Error ? e.cause.message : e.cause);
+      return { ok: false, error: "refund_failed" };
+    }
+    throw e;
+  }
+}
+
+class RefundFailed extends Error {
+  constructor(readonly cause: unknown) {
+    super("refund failed");
+  }
 }
 
 // ---------- Schedule ----------

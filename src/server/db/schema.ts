@@ -93,6 +93,32 @@ export const settings = pgTable("settings", {
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
+export const PAYMENT_STATUSES = ["pending", "paid", "expired", "refunded"] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bookingId: uuid("booking_id").notNull().references(() => bookings.id),
+  provider: text("provider").notNull().default("stripe"),
+  checkoutSessionId: text("checkout_session_id").notNull().unique(),
+  paymentIntentId: text("payment_intent_id").unique(),
+  amountHalalas: integer("amount_halalas").notNull(),
+  currency: text("currency").notNull(),
+  status: text("status").$type<PaymentStatus>().notNull(),
+  refundId: text("refund_id"),
+  refundReason: text("refund_reason"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+  paidAt: ts("paid_at"),
+  refundedAt: ts("refunded_at"),
+});
+
+export const paymentEvents = pgTable("payment_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  receivedAt: ts("received_at").notNull().defaultNow(),
+});
+
 export const adminSessions = pgTable("admin_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   tokenHash: text("token_hash").notNull().unique(),

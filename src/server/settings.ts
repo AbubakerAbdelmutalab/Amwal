@@ -6,7 +6,9 @@ import { settings } from "./db/schema";
 // Operational settings, stored in the `settings` table so the admin dashboard
 // can change them later. Missing or invalid values fall back to these defaults.
 export const DEFAULT_SETTINGS = {
-  holdMinutes: 10, // how long a slot is held while the client pays
+  // How long a slot is held while the client pays. Stripe Checkout pages last
+  // at least 30 minutes, so the hold matches that.
+  holdMinutes: 30,
   rescheduleCutoffHours: 3, // self-service reschedule closes this long before
   minNoticeHours: 3, // earliest a new booking can start from now
   horizonDays: 30, // how far ahead clients can book

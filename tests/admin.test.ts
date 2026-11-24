@@ -157,7 +157,7 @@ test("admin sees decrypted client details and can manage a booking", async () =>
   const detail = await getBookingDetail(s, row.id, now);
   assert.deepEqual(detail?.allowed, ["approve_cancel", "cancel"]);
   assert.deepEqual(await applyBookingAction(s, row.id, "complete", now), { ok: false, error: "not_allowed" });
-  assert.deepEqual(await applyBookingAction(s, row.id, "approve_cancel", now), { ok: true });
+  assert.deepEqual(await applyBookingAction(s, row.id, "approve_cancel", now), { ok: true, refunded: 0 });
   assert.equal((await getBookingDetail(s, row.id, now))?.status, "cancelled");
 
   // The freed slot can be booked again.

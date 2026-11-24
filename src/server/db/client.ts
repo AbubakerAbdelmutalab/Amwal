@@ -18,9 +18,33 @@ export type DB = PostgresJsDatabase<typeof schema>;
  * - Not set in production: no database; booking stays switched off.
  */
 export function databaseMode(): "postgres" | "local" | null {
-  if (process.env.DATABASE_URL) return "postgres";
+  if (hostedUrl()) return "postgres";
   if (process.env.NODE_ENV !== "production") return "local";
   return null;
+}
+
+/**
+ * Hosted database address: DATABASE_URL, or POSTGRES_URL as set by Vercel's
+ * Supabase integration (Supabase's pooler). Extra query parameters are
+ * dropped; the connection always uses TLS (see `options`).
+ */
+function hostedUrl(): string | null {
+  const raw = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!raw) return null;
+  const url = new URL(raw);
+  url.search = "";
+  return url.toString();
+}
+
+function options(url: string, max: number) {
+  const isLocalHost = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
+  return {
+    prepare: false, // required by Supabase's transaction pooler
+    max,
+    ssl: isLocalHost ? false : ("require" as const), // encrypted connection
+    connect_timeout: 15,
+    idle_timeout: 20,
+  };
 }
 
 type Holder = { ready: Promise<DB> };
@@ -46,14 +70,8 @@ export function setDbForTests(db: DB) {
 async function connect(): Promise<DB> {
   const mode = databaseMode();
   if (mode === "postgres") {
-    const url = process.env.DATABASE_URL!;
-    const isLocalHost = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
-    const client = postgres(url, {
-      prepare: false, // required by Supabase's transaction pooler
-      max: 5,
-      ssl: isLocalHost ? false : "require", // encrypted connection
-    });
-    return drizzlePostgres({ client, schema });
+    const url = hostedUrl()!;
+    return drizzlePostgres({ client: postgres(url, options(url, 5)), schema });
   }
   if (mode === "local") {
     const { PGlite } = await import("@electric-sql/pglite");
@@ -93,9 +111,11 @@ async function migratePglite(pg: PGlite) {
 }
 
 /** Used by `npm run db:migrate` against the hosted database. */
-export async function migrateHosted(url: string) {
-  const isLocalHost = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
-  const sql = postgres(url, { prepare: false, max: 1, ssl: isLocalHost ? false : "require" });
+export async function migrateHosted(rawUrl: string) {
+  const parsed = new URL(rawUrl);
+  parsed.search = "";
+  const url = parsed.toString();
+  const sql = postgres(url, options(url, 1));
   try {
     await sql.unsafe(MIGRATIONS_TABLE);
     const rows = await sql<{ id: string }[]>`SELECT id FROM schema_migrations`;

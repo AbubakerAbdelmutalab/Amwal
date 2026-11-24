@@ -30,9 +30,12 @@ data applied automatically. Only one process can open it at a time, so stop
 
 - Next.js 16 (App Router) + TypeScript, Tailwind CSS v4
 - PostgreSQL via Drizzle ORM: Supabase in production (`postgres` driver, v3),
-  PGlite locally and in tests
-- Planned: Moyasar, Google Calendar/Meet, WhatsApp Business API, Resend
-- Hosting: Vercel, auto-deploys from `main`
+  PGlite locally and in tests. Supabase via Vercel's integration, region fra1;
+  the app reads `DATABASE_URL` or the integration's `POSTGRES_URL`.
+- Payments: Stripe Checkout (hosted page), `stripe` SDK v23
+- Planned: Google Calendar/Meet, WhatsApp Business API, Resend
+- Hosting: Vercel, auto-deploys from `main`; functions pinned to `fra1`
+  (`vercel.json`) next to the database
 
 ## Layout
 
@@ -78,7 +81,22 @@ data applied automatically. Only one process can open it at a time, so stop
   Origin check (CSRF). Errors return codes, never internals.
 - **Headers** (`next.config.ts`): CSP, HSTS, X-Frame-Options DENY, nosniff,
   Referrer-Policy, Permissions-Policy. Add Moyasar domains to the CSP in Phase 3.
-- **Card data never touches this app** (Moyasar hosted form; Phase 3).
+- **Card data never touches this app**: clients pay on Stripe's hosted page
+  (checkout.stripe.com). No Stripe script runs on the site; there are no card
+  columns anywhere. Only a booking id goes to Stripe as metadata (plus the
+  client's email for the receipt).
+- **Bookings are confirmed only by a signature-verified Stripe webhook**
+  (`/api/stripe/webhook`, `STRIPE_WEBHOOK_SECRET`), never by the browser
+  returning from Stripe. Event + changes run in one transaction; a repeated
+  event id is skipped. Amount and currency are checked against the booking.
+- **Automatic refunds** (idempotency key `refund-<payment_intent>`): duplicate
+  payment, wrong amount, slot taken by the time a late payment arrives,
+  payment for a cancelled booking, and admin cancel/approve-cancel. If Stripe
+  refuses an admin refund, nothing changes.
+- Starting checkout again expires the earlier Stripe page. Stripe return links
+  use `SITE_URL`/`VERCEL_PROJECT_PRODUCTION_URL`, never the Host header.
+- **Booking on the live site needs `BOOKING_OPEN=true`** plus database, keys
+  and Stripe; until then `/booking` shows "قريبًا".
 - Booking is switched off unless both a database and the keys are configured
   (`isBookingEnabled()`); production without them shows "قريبًا".
 - Never log personal data; `audit_log.details` must not contain it.
@@ -123,16 +141,21 @@ data applied automatically. Only one process can open it at a time, so stop
   "allow three-hour sessions" switch. The database must reject overlapping bookings.
 - **Booking:** pick service, pick time, enter name + WhatsApp number + email, pay.
   No client accounts; clients manage a booking through a private link.
-  The slot is held for 10 minutes during payment.
+  The slot is held while the client pays (see Hold below).
 - **Booking defaults** (`settings` table, `src/server/settings.ts`): bookings
   start at least 3 hours from now, up to 30 days ahead; max 5 holds per IP per
   hour. The 3-hour minimum notice was my default, not specified by the owner.
 - **Prices** come from `src/lib/content.ts` and are seeded into the `services`
   table; the seed never overwrites existing rows, so a price change must be
   made in both places until the admin dashboard exists.
-- **Payments:** Moyasar (Apple Pay, mada, cards, STC Pay). Full payment confirms
-  the booking, only from a signature-verified, idempotent webhook. Credentials are
-  configuration; development uses test mode.
+- **Payments:** Stripe Checkout — the owner chose Stripe over Moyasar
+  (2026-11-24). Known limits, told to the owner: Stripe does not process mada or
+  STC Pay; a live Stripe account may require a business in a Stripe-supported
+  country; Stripe Checkout has no Arabic (locale `auto`). Full payment confirms
+  the booking. Development and the first deployment use a Stripe test sandbox.
+- **Hold:** 30 minutes (Stripe Checkout pages last at least 30 minutes);
+  starting checkout extends the hold to the page's expiry, up to 2 hours after
+  the hold was created.
 - **Tax:** VAT rate, VAT number and receipt breakdown are admin settings, off by
   default. Receipts are plain payment receipts. Make no tax-compliance claims.
 - **Sessions:** online only, Google Meet link created through Google Calendar.
@@ -160,11 +183,11 @@ sheet), AI intake assistant.
 1. Foundation, design system, home page — **done**
 2. Booking: secure data layer, schedule, slot rules, holds, "my booking" page,
    reschedule, cancellation request — **done** (not live: no hosted database yet)
-3. Payments: Moyasar test mode, webhooks, confirmation, receipts, refunds
+3. Payments: Stripe Checkout, webhook confirmation, automatic refunds —
+   **done in code**; connecting the Stripe sandbox + Supabase in Vercel pending
 4. Operations: admin panel with two-factor sign-in (bookings, cancellation
    approval, complete/no-show, schedule and exceptions) — **done**;
-   still to do: Google Meet, notifications, intake message, refunds through
-   Moyasar (until then the admin refunds manually in Moyasar's dashboard)
+   still to do: Google Meet, notifications, intake message
 5. Launch: Supabase + keys in Vercel, privacy policy and terms text, security
    review, phone testing, SEO, go-live
 

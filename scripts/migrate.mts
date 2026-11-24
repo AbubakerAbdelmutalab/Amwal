@@ -1,10 +1,15 @@
 // Applies database migrations and default data to the hosted database.
 // Usage: DATABASE_URL=... npm run db:migrate
+// Prefers a direct (non-pooled) connection when one is provided.
 import { migrateHosted } from "../src/server/db/client";
 
-const url = process.env.DATABASE_URL;
+const url =
+  process.env.MIGRATION_DATABASE_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
 if (!url) {
-  console.error("DATABASE_URL is not set");
+  console.error("No database URL set (DATABASE_URL or POSTGRES_URL)");
   process.exit(1);
 }
 

@@ -49,7 +49,11 @@ export function BookingFlow({
     startTransition(async () => {
       const res = await createHoldAction({ ...form, serviceId: service.id, startsAt: slot.startsAt });
       if (res.ok) {
-        router.push(`/b/${res.token}`);
+        if (res.checkoutUrl?.startsWith("https://checkout.stripe.com/")) {
+          window.location.assign(res.checkoutUrl);
+        } else {
+          router.push(`/b/${res.token}`);
+        }
         return;
       }
       if (res.error === "invalid" && res.fields) {
@@ -203,10 +207,11 @@ export function BookingFlow({
               disabled={pending}
               className="h-13 w-full rounded-full bg-brand text-lg font-semibold text-ink transition-colors hover:bg-brand-dark disabled:opacity-60"
             >
-              {pending ? "جارٍ حجز الموعد…" : "متابعة إلى الدفع"}
+              {pending ? "جارٍ تحويلك إلى صفحة الدفع…" : "متابعة إلى الدفع"}
             </button>
             <p className="text-center text-sm leading-6 text-muted">
-              نستخدم بياناتك فقط لتأكيد الحجز والتواصل معك بخصوص الجلسة، ونحفظها مشفّرة.{" "}
+              الدفع يتم في صفحة Stripe الآمنة، ولا نرى بيانات بطاقتك ولا نحفظها. نستخدم بياناتك
+              فقط لتأكيد الحجز والتواصل معك، ونحفظها مشفّرة.{" "}
               <Link href="/privacy" className="underline">
                 سياسة الخصوصية
               </Link>

@@ -155,4 +155,50 @@ BEGIN
 END $$;
 `,
   },
+  {
+    id: "0003_payments",
+    sql: `
+-- One row per Stripe Checkout session. No card data exists here: cards are
+-- entered on Stripe's own page and never reach this application.
+CREATE TABLE payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id uuid NOT NULL REFERENCES bookings(id),
+  provider text NOT NULL DEFAULT 'stripe',
+  checkout_session_id text NOT NULL UNIQUE,
+  payment_intent_id text UNIQUE,
+  amount_halalas integer NOT NULL CHECK (amount_halalas >= 0),
+  currency text NOT NULL,
+  status text NOT NULL CHECK (status IN
+    ('pending','paid','expired','refunded')),
+  refund_id text,
+  refund_reason text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  paid_at timestamptz,
+  refunded_at timestamptz
+);
+CREATE INDEX payments_booking_idx ON payments (booking_id);
+
+-- Stripe webhook events already processed (each is handled once).
+CREATE TABLE payment_events (
+  id text PRIMARY KEY,
+  type text NOT NULL,
+  received_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_events ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE r text;
+BEGIN
+  FOREACH r IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+      EXECUTE format('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM %I', r);
+      EXECUTE format('REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM %I', r);
+    END IF;
+  END LOOP;
+END $$;
+`,
+  },
 ];

@@ -7,6 +7,7 @@ import { clockTime, dateOf, fullDate, sar, timeRange } from "@/lib/format";
 import { riyadhTime } from "@/lib/schedule";
 import { getBookingForToken, isBookingEnabled, type BookingView } from "@/server/bookings";
 import { CancelRequest } from "./cancel-request";
+import { AwaitingConfirmation, PayButton } from "./pay-button";
 
 export const metadata: Metadata = {
   title: "حجزي",
@@ -23,8 +24,15 @@ const STATUS: Record<BookingView["status"], { label: string; tone: string }> = {
   expired: { label: "انتهت مهلة الحجز", tone: "bg-mist text-muted" },
 };
 
-export default async function BookingPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function BookingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ paid?: string }>;
+}) {
   const { token } = await params;
+  const returnedFromPayment = (await searchParams).paid === "1";
   if (!isBookingEnabled()) notFound();
   const b = await getBookingForToken(token);
   if (!b) notFound();
@@ -42,7 +50,7 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
         <p className="mt-2 text-xl text-muted">{timeRange(b.startsAt, b.endsAt)} · بتوقيت الرياض</p>
 
         <div className="mt-8">
-          <StatusPanel b={b} token={token} />
+          <StatusPanel b={b} token={token} returnedFromPayment={returnedFromPayment} />
         </div>
 
         <dl className="mt-8 divide-y divide-line rounded-2xl border border-line">
@@ -62,9 +70,24 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   );
 }
 
-function StatusPanel({ b, token }: { b: BookingView; token: string }) {
+function StatusPanel({
+  b,
+  token,
+  returnedFromPayment,
+}: {
+  b: BookingView;
+  token: string;
+  returnedFromPayment: boolean;
+}) {
   switch (b.status) {
     case "held":
+      if (returnedFromPayment) {
+        return (
+          <Panel>
+            <AwaitingConfirmation />
+          </Panel>
+        );
+      }
       return (
         <Panel>
           <p className="leading-8">
@@ -72,13 +95,17 @@ function StatusPanel({ b, token }: { b: BookingView; token: string }) {
             <strong>{b.holdExpiresAt ? clockTime(riyadhTime(new Date(b.holdExpiresAt))) : ""}</strong>.
             أكمل الدفع لتأكيد الحجز.
           </p>
-          <button
-            type="button"
-            disabled
-            className="mt-5 h-13 w-full rounded-full bg-brand text-lg font-semibold text-ink opacity-50"
-          >
-            الدفع الإلكتروني قريبًا
-          </button>
+          {b.canPay ? (
+            <PayButton token={token} />
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="mt-5 h-13 w-full rounded-full bg-brand text-lg font-semibold text-ink opacity-50"
+            >
+              الدفع الإلكتروني قريبًا
+            </button>
+          )}
         </Panel>
       );
     case "expired":
@@ -132,7 +159,7 @@ function StatusPanel({ b, token }: { b: BookingView; token: string }) {
       return (
         <Panel>
           <p className="leading-8">
-            استلمنا طلب الإلغاء، وسنراجعه ونعيد المبلغ إلى وسيلة الدفع نفسها.
+            استلمنا طلب الإلغاء. بعد الموافقة عليه يُعاد المبلغ تلقائيًا إلى بطاقتك.
           </p>
         </Panel>
       );
