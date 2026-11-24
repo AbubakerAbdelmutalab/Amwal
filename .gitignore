@@ -1,12 +1,13 @@
 node_modules
 .next
 out
-.env
-.env.*
-!.env.example
 *.tsbuildinfo
 next-env.d.ts
 .vercel
 
-.vercel
+# Secrets: never commit. Only the example file is tracked.
 .env*
+!.env.example
+
+# Local development database
+.data

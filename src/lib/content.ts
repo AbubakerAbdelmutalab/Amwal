@@ -5,6 +5,7 @@ export type Service = {
   id: string;
   name: string;
   duration: string;
+  durationMinutes: number;
   price: number;
   summary: string;
   points: string[];
@@ -16,6 +17,7 @@ export const services: Service[] = [
     id: "income-management",
     name: "إدارة الدخل",
     duration: "ساعتان",
+    durationMinutes: 120,
     price: 650,
     summary:
       "كيف تستهلك دخلك بذكاء: نرتّب مصاريفك وديونك ومدخراتك في خطة واحدة واضحة.",
@@ -33,6 +35,7 @@ export const services: Service[] = [
     id: "income-growth",
     name: "زيادة الدخل",
     duration: "ساعتان",
+    durationMinutes: 120,
     price: 650,
     summary:
       "كيف تنتج دخلًا جديدًا: نفهم المال ومصادره، ونحوّل مواردك المتاحة إلى مشروع.",
@@ -49,6 +52,7 @@ export const services: Service[] = [
     id: "both",
     name: "الاستشارة الكاملة",
     duration: "3 ساعات",
+    durationMinutes: 180,
     price: 1100,
     summary: "إدارة الدخل وزيادة الدخل في جلسة واحدة متكاملة.",
     points: [
